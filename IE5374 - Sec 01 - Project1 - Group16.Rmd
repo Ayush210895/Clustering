@@ -1,0 +1,607 @@
+---
+title: "Project1"
+author: "Ayush Soni, Darshan Patel, Keerthi Godha"
+date: "11/24/2021"
+output: pdf_document
+---
+
+```{r}
+
+# install.packages("readr")
+# install.packages("kohonen")
+# install.packages("factoextra")
+# install.packages("NbClust")
+# install.packages("plotly")
+# install.packages("fpc")
+# install.packages("clValid")
+# install.packages("ClusterR")
+# install.packages("dplyr")
+# install.packages("stringr")
+# install.packages("ggplot2")
+
+library(readr)
+library(kohonen)
+library(factoextra)
+library(NbClust)
+library(plotly)
+library(fpc)
+library(clValid)
+library(ClusterR)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
+```
+
+
+```{r}
+
+Data1 <- read_csv("Data1.csv")
+Data2 <- read_csv("Data2.csv")
+Data3 <- read_csv("Data3.csv")
+Data4 <- read_csv("Data4.csv")
+Data5 <- read_csv("Data5.csv")
+Data6 <- read_csv("Data6.csv")
+Data7 <- read_csv("Data7.csv")
+Data8 <- read_csv("Data8.csv")
+
+WorldIndicators<-  read.csv("World Indicators.csv")
+
+```
+
+
+```{r}
+
+# Approach for datasets 1 to 8:
+# To cluster the given data, we followed the steps mentioned below.
+# 1.	Get the numeric data from the given dataset.
+# 2.	Find the optimal number of clusters with the help of “wss” or “silhouette” method.
+# 3.	Find the elbow in wss plot to get number of clusters or find the number of clusters marking line in silhouette plot.
+# 4.	If both methods give different number of clusters, we found CH coeff, Dunn index and silhouette coeff to find optimal number of clusters.
+# 5.	Use kmeans function in r to get clusters.
+# 6.	Validate those clusters with the help of external_validation function.
+
+data_numeric <- Data1[,c(2:4)]
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+#As per the plots, number of optimal clusters given by wss method is 8 and by silhouette method is 6. 
+
+#Taking 8 clusters
+Data_KMeans <- kmeans(data_numeric, 8, nstart = 50)
+paste("CH: ", round(calinhara(data_numeric, Data_KMeans$cluster),digits=2))
+paste("Dunn Index: ", dunn(clusters = Data_KMeans$cluster, Data = data_numeric))
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data1$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data1$kClass <- Data_KMeans$cluster
+
+#Taking 6 clusters
+Data_KMeans <- kmeans(data_numeric,6)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data1$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+#The value for External Validation with 6 clusters is higher which gives better clustering solution.
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data1$hClass <- cutree(h_cluster,7)
+
+
+#Plot with Original Class
+Data1 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the K-means clustering algorithm
+Data1 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+#Plot with class allocated by the Hierarchical clustering algorithm
+Data1 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+```{r}
+data_numeric <- Data2[,c(2:4)]
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 4, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data2$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data2$kClass <- Data_KMeans$cluster
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data2$hClass <- cutree(h_cluster,4)
+
+
+#Plot with Original Class
+Data2 %>%
+  plot_ly(x = ~X, y = ~Y, z = ~C, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the K-means clustering algorithm
+Data2 %>%
+  plot_ly(x = ~X, y = ~Y, z = ~C, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with K-means Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the Hierarchical clustering algorithm
+Data2 %>%
+  plot_ly(x = ~X, y = ~Y, z = ~C, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+
+```
+
+
+
+```{r}
+data_numeric <- Data3[,c(2:4)]
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 4, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data3$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data3$kClass <- Data_KMeans$cluster
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data3$hClass <- cutree(h_cluster,4)
+
+
+#Plot with Original Class
+Data3 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the clustering algorithm
+Data3 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with K-means Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the Hierarchical clustering algorithm
+Data3 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+
+```{r}
+data_numeric <- Data4[,c(2:4)]
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 2, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data4$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data4$kClass <- Data_KMeans$cluster
+
+Data_KMeans <- kmeans(data_numeric, 8, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data4$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data4$hClass <- cutree(h_cluster,2)
+
+#Plot with Original Class
+Data4 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the clustering algorithm
+Data4 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the Hierarchical clustering algorithm
+Data4 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+```{r}
+data_numeric <- Data5[,c(2:4)]
+
+data_numeric <- scale(data_numeric)
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 7, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data5$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data5$kClass <- Data_KMeans$cluster
+
+Data_KMeans <- kmeans(data_numeric, 10, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data5$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data5$hClass <- cutree(h_cluster,2)
+
+
+#Plot with Original Class
+Data5 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the clustering algorithm
+Data5 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the clustering algorithm
+Data5 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+
+```{r}
+data_numeric <- Data6[,c(2,3)]
+
+data_numeric <- scale(data_numeric)
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 3, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data6$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data6$kClass <- Data_KMeans$cluster
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data6$hClass <- cutree(h_cluster, 3)
+
+
+#Plot with Original Class
+Data6 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "2D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the clustering algorithm
+Data6 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "2D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the clustering algorithm
+Data6 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "2D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+
+
+```{r}
+data_numeric <- Data7[,c(2,3)]
+
+#K-means Clustering
+#To estimate the optimal number of clusters, the wss (within sum of square) and silhouette are drawn according to the number of clusters.
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 5, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data7$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data7$kClass <- Data_KMeans$cluster
+
+Data_KMeans <- kmeans(data_numeric, 6, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data7$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data7$hClass <- cutree(h_cluster,5)
+
+
+#Plot with Original Class
+Data7 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+  
+
+#Plot with class allocated by the clustering algorithm
+Data7 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the clustering algorithm
+Data7 %>%
+  plot_ly(x = ~X1, y = ~X2, type = "scatter", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hirrarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+
+```{r}
+data_numeric <- Data8[,c(2,3)]
+
+#K-means Clustering
+fviz_nbclust(data_numeric, kmeans, method = "wss")
+fviz_nbclust(data_numeric, kmeans, method = "silhouette")
+set.seed(5)
+
+Data_KMeans <- kmeans(data_numeric, 3, nstart = 100)
+round(calinhara(data_numeric, Data_KMeans$cluster),digits=2)
+dunn(clusters = Data_KMeans$cluster, Data = data_numeric)
+plot(silhouette(Data_KMeans$cluster, dist(data_numeric)^2))
+
+external_validation(Data8$Class, Data_KMeans$cluster, method = "jaccard_index")
+
+Data8$kClass <- Data_KMeans$cluster
+
+
+#Hierarchical Clustering
+h_cluster <- hclust(dist(data_numeric), method="single")
+plot(h_cluster)
+Data8$hClass <- cutree(h_cluster,1)
+
+
+#Plot with Original Class
+Data8 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(Class)) %>%
+  layout(title = "3D Plot of Data", legend = list(title = list(text = "Class")))
+    
+
+#Plot with class allocated by the clustering algorithm
+Data8 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(kClass)) %>%
+  layout(title = "3D Plot of Data with Clustering", legend = list(title = list(text = "Class")))
+
+
+#Plot with class allocated by the clustering algorithm
+Data8 %>%
+  plot_ly(x = ~X1, y = ~X2, z = ~X3, type = "scatter3d", mode="markers", color = ~factor(hClass)) %>%
+  layout(title = "3D Plot of Data with Hierarchical Clustering", legend = list(title = list(text = "Class")))
+
+```
+
+
+
+
+```{r}
+World<- WorldIndicators
+
+
+World$Business.Tax.Rate <- str_replace_all(World$Business.Tax.Rate, "%", "")
+World$Business.Tax.Rate <- as.numeric(World$Business.Tax.Rate)
+
+World$Health.Exp.Capita <- gsub("\\$", "", World$Health.Exp.Capita)
+World$Health.Exp.Capita <- gsub("\\,", "", World$Health.Exp.Capita)
+World$Health.Exp.Capita <- as.numeric(World$Health.Exp.Capita)
+
+World$GDP <- gsub("\\$", "", World$GDP)
+World$GDP <- gsub("\\,", "", World$GDP)
+World$GDP <- as.numeric(World$GDP)
+
+World$LifeExpectancy <- (World$Life.Expectancy.Male+World$Life.Expectancy.Female)/2
+
+
+World <- World[, c(-4, -11, -19)]
+World <- na.omit(World)
+World <- World[,c(1:16,18,17)]
+
+for(i in 1:ncol(World[,1:17])){
+  World[, i] <- scale(World[,i])
+}
+
+
+#kmeans
+fviz_nbclust(World[,1:17], kmeans , method="wss")
+fviz_nbclust(World[,1:17], kmeans, method = "silhouette")
+
+kWorld<- kmeans(World[,1:17], 2, nstart=25)
+World$kclass<- kWorld$cluster
+
+#Hierarchical Clustering
+hWorld <- hclust(dist(World[,1:17]), method="single")
+plot(hWorld)
+World$hclass <- cutree(hWorld,2)
+
+#Visualizing data after clustering based on Kmeans
+fviz_cluster(list(data = World[,1:17] ,cluster = World$kclass), geom = "point", title="Clustering based on Kmeans" ) 
+
+#Visualizing data after clustering based on Hierarchical Clustering
+fviz_cluster(list(data = World[,1:17] ,cluster = World$hclass), geom = "point" ,title="Clustering based on Hierarchical Clustering" )
+
+#Internal Validation for clusters by kmeans
+#CH Coefficient
+paste0("CH Coeffiecinet in kmeans is - ",round(calinhara(World[,1:17],World$kclass),2))
+#dunn index
+paste0("Dunn index in kmeans is - ",dunn(clusters = World$kclass, Data = World[,1:17]))
+#silhouette Coefficient
+dis = dist(World[,1:17])^2
+ksil<- silhouette(kWorld$cluster, dis)
+plot(ksil)
+
+# In Kmeans clustering - Calisnki-Harabasz coefficient is maximum(115) in above validation with 2 clusters, which means clusters are more dispersed with each other
+#Dunn index value is 0.0712, which means clusters are somewhat separated
+#Silhouette coefficient in above validation is 0.55, which is positive and nearest to 1, which means clusters are separated with each other 
+
+#Internal Validation for clusters by Hierarchical Clustering
+#CH Coefficient
+paste0("CH Coeffiecinet in Hierarchical Clustering is - ",round(calinhara(World[,1:17],World$hclass),2))
+#dunn index
+paste0("Dunn index in Hierarchical Clustering is - ",dunn(clusters = World$hclass, Data = World[,1:17]))
+#silhouette Coefficient
+dis = dist(World[,1:17])^2
+hsil<- silhouette(World$hclass, dis)
+plot(hsil)
+
+# In hierarchical clustering -Calisnki-Harabasz coefficient is (8.19) in above validation with 2 clusters, which is very minimum, that means clusters are not dispersed much.
+#Dunn index value is 0.59, which means clusters are somewhat separated
+#Silhouette coefficient in above validation is 0.78, which is positive and very nearer to 1, which indicates that clusters are highly separated with each other 
+
+#In case of World Indicators data set, though the kmeans and hierarchical clustering both are giving  same number of clusters to be formed, Kmeans formed the best possible clusters compared to hierarchical clustering. 
+
+#List of groups 
+print("List of Groups formed are - ", )
+unique(kWorld$cluster)
+
+#Country count by clusters formed by kmeans
+World %>%
+  group_by(kclass) %>%
+  summarise(Country_count=n())
+
+#Country count by clusters formed by hierarchical clustering
+World %>%
+  group_by(hclass) %>%
+  summarise(Country_count=n())
+
+Countrieswithngroups <- World %>% 
+  group_by(kclass) %>%
+  summarise(Countries = toString(Country)) %>%
+  ungroup()
+
+#Countries within cluster 1
+paste0("Countries within cluster 1 are ",as.character(Countrieswithngroups[1,2]))
+
+#Countries within cluster 2
+paste0("Countries within cluster 2 are ",as.character(Countrieswithngroups[2,2]))
+
+```
+
+
+
+```{r}
+#Plots
+ggplot(World,aes(x=LifeExpectancy, y=GDP, color=factor(kclass))) + geom_point() +
+  ggtitle("Life Expectancy vs GDP") + 
+  labs(x = "Life Expectancy",y = "GDP") +
+  scale_color_discrete(name = "Cluster") +
+  theme(axis.title.x = element_text(size=15),axis.title.y = element_text(size = 15)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+ggplot(World,aes(x=Infant.Mortality.Rate, y=GDP, color=factor(kclass)))+ geom_point() +
+  ggtitle("Infant Mortality Rate vs GDP") + 
+  labs(x = "Infant Mortality Rate",y = "GDP") +
+  scale_color_discrete(name = "Cluster") +
+  theme(axis.title.x = element_text(size=15),axis.title.y = element_text(size = 15)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+ggplot(World,aes(x=Business.Tax.Rate, y=GDP, color=factor(kclass))) + geom_point() +
+  ggtitle("Business Tax Rate vs GDP") + 
+  labs(x = "Business Tax Rate",y = "GDP") +
+  scale_color_discrete(name = "Cluster") +
+  theme(axis.title.x = element_text(size=15),axis.title.y = element_text(size = 15)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+ggplot(World,aes(x=Internet.Usage, y=GDP, color=factor(kclass))) + geom_point() +
+  ggtitle("Internet Usage vs GDP") + 
+  labs(x = "Internet Usage",y = "GDP") +
+  scale_color_discrete(name = "Cluster") +
+  theme(axis.title.x = element_text(size=15),axis.title.y = element_text(size = 15)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+ggplot(World,aes(x=Population.15.64, y=GDP, color=factor(kclass))) + geom_point() +
+  ggtitle("Population between 15-64 vs GDP") + 
+  labs(x = "Population between 15-64",y = "GDP") +
+  scale_color_discrete(name = "Cluster") +
+  theme(axis.title.x = element_text(size=15),axis.title.y = element_text(size = 15)) +
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+
+World %>%
+  plot_ly(x = ~Mobile.Phone.Usage, y = ~Internet.Usage, z=~LifeExpectancy , type = "scatter3d", mode="markers", color = ~factor(kclass), text=World$Country,  hoverinfo ='text',
+           hovertemplate = "Mobile Phone Usage : %{x}<br>Internet Usage : %{y}<br>Life Expectancy : %{z}<br>Country : %{text}<extra></extra>") %>%
+  layout(title = "Mobile Phone Usage vs Internet Usage vs Life Expectancy", legend = list(title = list(text = "Class")))
+
+```
